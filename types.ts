@@ -8,4 +8,8 @@ export interface Product {
   category: string;
 }
 
-export type Page = 'home' | 'login' | 'register';
+export interface CartItem extends Product {
+  quantity: number;
+}
+
+export type Page = 'home' | 'login' | 'register' | 'cart';

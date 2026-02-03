@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { MOCK_PRODUCTS } from '../constants';
-import { ProductCard } from '../components/ProductCard';
+import { ProductCard } from './ProductCard';
 
 export const Home: React.FC = () => {
   return (
