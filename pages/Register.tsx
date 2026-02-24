@@ -59,8 +59,8 @@ export const Register: React.FC = () => {
       if (error) {
         setAuthError(error.message);
       } else if (data.user) {
-        alert('Registration successful! Please check your email for verification if needed.');
-        navigate('/login');
+        alert('Registration successful! Welcome to Nexus Storefront.');
+        navigate('/');
       }
     }
   };
