@@ -7,18 +7,30 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
 dist
 dist-ssr
-*.local
+.eslintcache
+*.tsbuildinfo
 
-# Editor directories and files
+# Sensitive Info
+.env
+.env.local
+.env.*.local
+# .env.example should NOT be ignored as it serves as a template
+
+# Editor & OS
 .vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# Local Data / Backup
+DB.text
