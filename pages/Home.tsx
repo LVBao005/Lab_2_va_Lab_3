@@ -1,9 +1,33 @@
-
-import React from 'react';
-import { MOCK_PRODUCTS } from '../constants';
+import React, { useEffect, useState } from 'react';
 import { ProductCard } from './ProductCard';
+import { supabase } from '../lib/supabase';
+import { Loader2, PackageX } from 'lucide-react';
+import { Product } from '../types';
 
 export const Home: React.FC = () => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .order('name');
+
+        if (error) throw error;
+        setProducts(data || []);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+        setProducts([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
   return (
     <div className="animate-in fade-in duration-500">
       {/* Hero Section */}
@@ -27,11 +51,28 @@ export const Home: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:gap-x-8">
-          {MOCK_PRODUCTS.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 text-slate-400 animate-spin" />
+            <p className="mt-4 text-slate-500 font-medium">Loading products...</p>
+          </div>
+        ) : products.length > 0 ? (
+          <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:gap-x-8">
+            {products.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-slate-200 rounded-3xl">
+            <div className="h-16 w-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+              <PackageX className="h-8 w-8 text-slate-300" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900">No products available</h3>
+            <p className="text-slate-500 mt-2 max-w-sm text-center">
+              We couldn't find any products in our store right now. Please check back later or refresh the page.
+            </p>
+          </div>
+        )}
       </section>
     </div>
   );

@@ -1,16 +1,90 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, ShoppingBag } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../hooks/useAuth';
 import { CartItem } from '../components/CartItem';
 import { Button } from '../components/Button';
+import { supabase } from '../lib/supabase';
 
 export const Cart: React.FC = () => {
     const { cart, totalPrice, clearCart } = useCart();
+    const { user } = useAuth();
+    const navigate = useNavigate();
+    const [isCheckingOut, setIsCheckingOut] = React.useState(false);
 
-    const handleCheckout = () => {
-        alert('Your order has been processed successfully! Thank you for shopping with Nexus.');
-        clearCart();
+    const isUUID = (id: string) => {
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        return uuidRegex.test(id);
+    };
+
+    const handleCheckout = async () => {
+        if (!user) {
+            navigate('/login');
+            return;
+        }
+
+        setIsCheckingOut(true);
+        try {
+            // 1. Create the order
+            const { data: orderData, error: orderError } = await supabase
+                .from('orders')
+                .insert({
+                    user_id: user.id,
+                    total_price: totalPrice,
+                    status: 'completed'
+                })
+                .select()
+                .single();
+
+            if (orderError) throw orderError;
+
+            // 2. Create order items
+            const orderItems = cart.map(item => {
+                // Determine if this is a real product from the database
+                const isRealProduct = isUUID(item.id);
+
+                // Construct the base entry
+                const entry: any = {
+                    order_id: orderData.id,
+                    name: item.name,
+                    price: item.price,
+                    quantity: item.quantity
+                };
+
+                // ONLY include product_id if it's a valid UUID
+                // If it's mock data (like '1', '2'), we omit it completely
+                if (isRealProduct) {
+                    entry.product_id = item.id;
+                }
+
+                return entry;
+            });
+
+            console.log('Sending order items to Supabase:', orderItems);
+
+            const { error: itemsError } = await supabase
+                .from('order_items')
+                .insert(orderItems)
+                .select();
+
+            if (itemsError) throw itemsError;
+
+            alert('Your order has been processed successfully! Thank you for shopping with Nexus.');
+            clearCart();
+            navigate('/orders');
+        } catch (error: any) {
+            console.error('Error creating order:', error);
+
+            // Specifically handle Foreign Key violations
+            if (error.message?.includes('violates foreign key constraint')) {
+                alert('Checkout failed: One or more items in your cart are no longer available or have invalid IDs. Please CLEAR YOUR CART and try adding products again.');
+            } else {
+                alert('Failed to place order: ' + error.message);
+            }
+        } finally {
+            setIsCheckingOut(false);
+        }
     };
 
     if (cart.length === 0) {
@@ -84,8 +158,21 @@ export const Cart: React.FC = () => {
                         </div>
                     </div>
 
-                    <Button variant="primary" className="mt-8 w-full py-4 text-base shadow-lg shadow-slate-200" onClick={handleCheckout}>
-                        Checkout Now
+                    <Button
+                        variant="primary"
+                        className="mt-8 w-full py-4 text-base shadow-lg shadow-slate-200"
+                        onClick={handleCheckout}
+                        disabled={isCheckingOut}
+                    >
+                        {isCheckingOut ? (
+                            <span className="flex items-center gap-2">
+                                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                </svg>
+                                Processing...
+                            </span>
+                        ) : 'Checkout Now'}
                     </Button>
 
                     <p className="mt-4 text-center text-xs text-slate-400">

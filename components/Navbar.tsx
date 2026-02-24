@@ -2,9 +2,12 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from './Button';
 import { CartIcon } from './CartIcon';
+import { useAuth } from '../hooks/useAuth';
+import { LogOut, User, Package } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const location = useLocation();
+  const { user, signOut } = useAuth();
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/80 backdrop-blur-md">
@@ -25,19 +28,46 @@ export const Navbar: React.FC = () => {
             >
               Home
             </Link>
+            {user && (
+              <Link
+                to="/orders"
+                className={`text-sm font-bold transition-colors ${location.pathname === '/orders' ? 'text-slate-950 underline underline-offset-4' : 'text-slate-950 hover:opacity-80'
+                  }`}
+              >
+                Orders
+              </Link>
+            )}
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           <CartIcon />
-          <Link to="/login">
-            <Button variant="outline" size="sm" className="border-slate-950 font-semibold">
-              Log in
-            </Button>
-          </Link>
-          <Link to="/register">
-            <Button variant="primary" size="sm">Register</Button>
-          </Link>
+          {user ? (
+            <div className="flex items-center gap-3 ml-2 pl-3 border-l border-slate-200">
+              <div className="flex items-center gap-2 px-3 py-1 bg-slate-100 rounded-full text-slate-700">
+                <User className="h-3.5 w-3.5 text-slate-500" />
+                <span className="text-xs font-medium max-w-[100px] truncate">{user.email}</span>
+              </div>
+              <button
+                onClick={() => signOut()}
+                className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                title="Sign Out"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <>
+              <Link to="/login">
+                <Button variant="outline" size="sm" className="border-slate-950 font-semibold">
+                  Log in
+                </Button>
+              </Link>
+              <Link to="/register">
+                <Button variant="primary" size="sm">Register</Button>
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </nav>

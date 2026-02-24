@@ -1,36 +1,48 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
+import { supabase } from '../lib/supabase';
 
 export const Login: React.FC = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const validate = () => {
     const newErrors: { [key: string]: string } = {};
     if (!formData.email) newErrors.email = 'Email is required';
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid';
-    
+
     if (!formData.password) newErrors.password = 'Password is required';
     else if (formData.password.length < 6) newErrors.password = 'Password must be at least 6 characters';
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setAuthError(null);
     if (validate()) {
       setIsLoading(true);
-      // Simulate API call
-      setTimeout(() => {
-        setIsLoading(false);
-        alert('Logged in successfully!');
-      }, 1500);
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      setIsLoading(false);
+
+      if (error) {
+        setAuthError(error.message);
+      } else if (data.user) {
+        navigate('/');
+      }
     }
   };
 
@@ -55,6 +67,12 @@ export const Login: React.FC = () => {
           <h1 className="text-2xl font-bold text-slate-900">Welcome Back</h1>
           <p className="mt-2 text-slate-500">Enter your credentials to access your account</p>
         </div>
+
+        {authError && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl">
+            {authError}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} noValidate>
           <Input

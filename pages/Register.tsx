@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
+import { supabase } from '../lib/supabase';
 
 export const Register: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -15,35 +16,52 @@ export const Register: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const validate = () => {
     const newErrors: { [key: string]: string } = {};
     if (!formData.name.trim()) newErrors.name = 'Full name is required';
-    
+
     if (!formData.email) newErrors.email = 'Email is required';
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid';
-    
+
     if (!formData.password) newErrors.password = 'Password is required';
     else if (formData.password.length < 8) newErrors.password = 'Password must be at least 8 characters';
-    
+
     if (!formData.confirmPassword) newErrors.confirmPassword = 'Please confirm your password';
     else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setAuthError(null);
     if (validate()) {
       setIsLoading(true);
-      // Simulate API call
-      setTimeout(() => {
-        setIsLoading(false);
-        alert('Registration successful!');
-      }, 1500);
+
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.name,
+          }
+        }
+      });
+
+      setIsLoading(false);
+
+      if (error) {
+        setAuthError(error.message);
+      } else if (data.user) {
+        alert('Registration successful! Please check your email for verification if needed.');
+        navigate('/login');
+      }
     }
   };
 
@@ -68,6 +86,12 @@ export const Register: React.FC = () => {
           <h1 className="text-2xl font-bold text-slate-900">Create Account</h1>
           <p className="mt-2 text-slate-500">Join Nexus and start shopping today</p>
         </div>
+
+        {authError && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl">
+            {authError}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} noValidate>
           <Input
