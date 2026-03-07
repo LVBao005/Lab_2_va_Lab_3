@@ -37,6 +37,14 @@ export const Navbar: React.FC = () => {
                 Orders
               </Link>
             )}
+            <Link
+              to="/chat"
+              className={`text-sm font-bold transition-colors ${location.pathname === '/chat' ? 'text-slate-950 underline underline-offset-4' : 'text-slate-950 hover:opacity-80 flex items-center gap-1'
+                }`}
+            >
+              <div className="h-1.5 w-1.5 rounded-full bg-green-500"></div>
+              Nexus AI
+            </Link>
           </div>
         </div>
 
